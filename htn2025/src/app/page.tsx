@@ -11,8 +11,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
@@ -21,18 +21,16 @@ export default function HomePage() {
 
       if (!userSnap.exists()) {
         await setDoc(userRef, {
-          uid: user.uid,
           name: user.displayName,
           email: user.email,
-          photoURL: user.photoURL,
           createdAt: new Date(),
         });
       }
 
-      router.push('/dashboard'); // Redirect to main page
-    } catch (error) {
-      console.error('Google Sign-In Error:', error);
-      alert('Sign-in failed.');
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Sign in error:', err);
+      alert('Sign in failed. Please try again.');
     } finally {
       setLoading(false);
     }
