@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, addDoc, getDocs, query, where, limit, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Plus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
 type Lecture = {
   id: string;
@@ -206,6 +207,9 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {lectures.map(lecture => (
+                <Link key={lecture.id} href={{
+                    pathname: `/lectures/${lecture.id}`
+                  }}>
                 <div
                   key={lecture.id}
                   className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
@@ -245,6 +249,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-gray-500">Code: {lecture.privateCode}</p>
                   )}
                 </div>
+                </Link>
               ))}
             </div>
           )}
@@ -279,6 +284,9 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {lectures.map(lecture => (
+                <Link key={lecture.id} href={{
+                    pathname: `/lectures/${lecture.id}`
+                  }}>
                 <div
                   key={lecture.id}
                   className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
@@ -301,6 +309,7 @@ export default function DashboardPage() {
                     Created on: {lecture.createdAt.toDate().toLocaleDateString()}
                   </p>
                 </div>
+                </Link>
               ))}
             </div>
           )}
@@ -327,6 +336,9 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {lectures.map(lecture => (
+                <Link key={lecture.id} href={{
+                    pathname: `/lectures/${lecture.id}`
+                  }}>
                 <div
                   key={lecture.id}
                   className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
@@ -349,8 +361,10 @@ export default function DashboardPage() {
                     Created on: {lecture.createdAt.toDate().toLocaleDateString()}
                   </p>
                 </div>
+                </Link>
               ))}
             </div>
+            
           )}
 
 
