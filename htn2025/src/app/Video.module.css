@@ -1,0 +1,61 @@
+.container {
+    background-color: white;
+    padding: 2rem;
+    max-width: 700px;
+    margin: auto;
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .heading {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    text-align: center;
+    color: #222;
+  }
+  
+  .input {
+    display: block;
+    width: 100%;
+    margin: 1rem 0;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .uploading {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+  }
+  
+  .error {
+    color: #d32f2f;
+    text-align: center;
+    margin-top: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .videoContainer {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .subheading {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .video {
+    max-width: 100%;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  .link {
+    font-size: 0.9rem;
+    word-break: break-all;
+    color: #0066cc;
+  }

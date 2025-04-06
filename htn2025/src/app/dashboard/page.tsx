@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, addDoc, getDocs, query, where, limit, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs,deleteDoc, query, where, limit, orderBy, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import styles from "../Video.module.css";
 
 type Lecture = {
   id: string;
@@ -13,7 +14,7 @@ type Lecture = {
   videoUrl?: string;
   createdAt: Date;
   visibility: 'public' | 'private';
-  privateCode?: string; // Add privateCode field for private lectures
+  privateCode?: string; 
 };
 
 export default function DashboardPage() {
@@ -30,23 +31,87 @@ export default function DashboardPage() {
   const [codeSearchTerm, setCodeSearchTerm] = useState(''); // Store private code search term
 
 
+  const [videoURL, setVideoURL] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [fileName, setFileName] = useState("");
+
+
+
+    
+
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setError("");
+    setFileName(file.name);
+
+    try {
+      // 1) Request the presigned URL
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: file.name,
+          type: file.type,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.details || `Server error: ${res.status}`);
+      }
+
+      const { uploadUrl, key } = await res.json();
+
+      // 2) Upload file directly to S3 (no 'x-amz-acl' header!)
+      const putRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (!putRes.ok) {
+        const errorText = await putRes.text();
+        throw new Error(`S3 upload failed: ${putRes.status} - ${errorText}`);
+      }
+
+      // We can form the public URL, but it won't actually be publicly accessible
+      // unless your bucket policy allows s3:GetObject for everyone.
+      const finalURL = `https://video-raiyanzaman.s3.amazonaws.com/${key}`;
+      setVideoURL(finalURL);
+    } catch (err: any) {
+      console.error("Upload error details:", err);
+      setError(err.message || "Upload failed. Check console for details.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+
+
+
   const generateRandomCode = async (): Promise<string> => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let code = '';
     let isUnique = false;
 
     while (!isUnique) {
-      // Generate a random 6-character code
+      
       code = '';
       for (let i = 0; i < 6; i++) {
         code += characters.charAt(Math.floor(Math.random() * characters.length));
       }
 
-      // Check if this code already exists in the database
+     
       const lectureQuery = query(collection(db, 'lectures'), where('privateCode', '==', code));
       const querySnapshot = await getDocs(lectureQuery);
 
-      // If no lectures have this code, it is unique
       if (querySnapshot.empty) {
         isUnique = true;
       }
@@ -91,7 +156,7 @@ export default function DashboardPage() {
     setLoading(false);
   };
 
-  // Create a new lecture
+
   const createLecture = async () => {
     if (!newTitle) return; // Don't create if title is missing
 
@@ -114,8 +179,8 @@ export default function DashboardPage() {
   const handleDelete = async (id: string) => {
     if (confirmDelete) {
       const lectureRef = doc(db, 'lectures', id);
-      await deleteDoc(lectureRef); // Delete the lecture from Firestore
-      await fetchLectures(); // Refresh the list after deletion
+      await deleteDoc(lectureRef); 
+      await fetchLectures(); 
       setConfirmDelete(false); // Reset confirmation state
       setDeletingId(null); // Reset the ID of the lecture being deleted
     } else {
@@ -219,7 +284,10 @@ export default function DashboardPage() {
                       {lecture.title || 'Untitled Lecture'}
                     </h2>
                     <button
-                      onClick={() => handleDelete(lecture.id)}
+                        onClick={(e) => {
+                            e.preventDefault(); 
+                            handleDelete(lecture.id); 
+                          }}
                       className="text-red-500 hover:text-red-600"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -386,6 +454,30 @@ export default function DashboardPage() {
               placeholder="Enter Lecture Title"
               className="w-full p-3 mb-4 border border-gray-300 rounded-md"
             />
+
+<input
+        type="file"
+        accept="video/*"
+        onChange={handleFileChange}
+        className={styles.input}
+        disabled={isUploading}
+      />
+
+      {isUploading && <p className={styles.uploading}>Uploading...</p>}
+      {error && <p className={styles.error}>{error}</p>}
+
+      {videoURL && (
+        <div className={styles.videoContainer}>
+          <h2 className={styles.subheading}>Preview: {fileName}</h2>
+          <video controls src={videoURL} className={styles.video} />
+          <p className={styles.link}>
+            Potential URL:{" "}
+            <a href={videoURL} target="_blank" rel="noreferrer">
+              {videoURL}
+            </a>
+          </p>
+        </div>
+      )}
 
             {/* Visibility Checkbox */}
             <div className="flex items-center mb-4">
