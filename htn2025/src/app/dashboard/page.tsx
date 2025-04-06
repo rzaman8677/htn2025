@@ -163,7 +163,7 @@ export default function DashboardPage() {
     const newLecture: Lecture = {
       title: newTitle,
       text: '',
-      videoUrl: '',
+      videoUrl: videoURL,
       createdAt: new Date(),
       visibility,
       privateCode: await generateRandomCode() , // Generate code only if private
