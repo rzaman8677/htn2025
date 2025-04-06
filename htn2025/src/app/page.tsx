@@ -39,7 +39,7 @@ export default function HomePage() {
   return (
     <main className="flex h-screen items-center justify-center bg-gray-100">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">Parallel Professor</h1>
+        <h1 className="text-4xl text-gray-600 font-bold">Parallel Professor</h1>
         <p className="text-gray-600">Sign in to get started</p>
         <button
           onClick={handleSignIn}

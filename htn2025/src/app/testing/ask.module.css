@@ -1,0 +1,72 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: sans-serif;
+  background-color: #fff; /* <-- White background */
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.fileUpload {
+  margin-bottom: 1rem;
+}
+
+.transcriptPreview {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+.questionInput {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.questionInput label {
+  margin-bottom: 0.5rem;
+}
+
+.questionInput input {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.askButton {
+  background-color: #0070f3;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  cursor: pointer;
+  font-size: 1rem;
+  border-radius: 4px;
+}
+
+.askButton:hover {
+  opacity: 0.9;
+}
+
+.askButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 1rem;
+  color: red;
+}
+
+.answerContainer {
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  background-color: #fafafa;
+}
