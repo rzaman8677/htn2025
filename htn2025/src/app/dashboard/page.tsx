@@ -13,6 +13,7 @@ type Lecture = {
   text?: string;
   videoUrl?: string;
   createdAt: Date;
+  transcription:string,
   visibility: 'public' | 'private';
   privateCode?: string; 
 };
@@ -31,15 +32,23 @@ export default function DashboardPage() {
   const [codeSearchTerm, setCodeSearchTerm] = useState(''); // Store private code search term
 
 
-  const [videoURL, setVideoURL] = useState("");
+  const [videoURL, setVideoURL] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
 
+  const [transcript, setTranscript] = useState("");
+
 
 
     
-
+  useEffect( () => {
+    if (videoURL) {
+      // This will be called whenever videoURL is updated
+     
+      handleTranscribe(); // This will show the updated videoURL
+    }
+  }, [videoURL]); 
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,12 +93,47 @@ export default function DashboardPage() {
       // We can form the public URL, but it won't actually be publicly accessible
       // unless your bucket policy allows s3:GetObject for everyone.
       const finalURL = `https://video-raiyanzaman.s3.amazonaws.com/${key}`;
+
+      
       setVideoURL(finalURL);
+      
+
+   
+
+      
     } catch (err: any) {
       console.error("Upload error details:", err);
       setError(err.message || "Upload failed. Check console for details.");
     } finally {
       setIsUploading(false);
+     
+     
+    }
+  };
+  
+
+  const handleTranscribe = async () => {
+    setLoading(true);
+    setError("");
+    setTranscript("");
+ 
+    console.log(videoURL);
+    try {
+      const res = await fetch("/api/speechrand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoURL }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Transcription failed");
+
+      setTranscript(data.text);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,22 +200,30 @@ export default function DashboardPage() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    
+    if (transcript && videoURL) {
+        createLecture();
+      }
+  }, [transcript,videoURL]); 
+
 
   const createLecture = async () => {
     if (!newTitle) return; // Don't create if title is missing
-
+ 
     const newLecture: Lecture = {
       title: newTitle,
       text: '',
       videoUrl: videoURL,
       createdAt: new Date(),
+      transcription: transcript,
       visibility,
       privateCode: await generateRandomCode() , // Generate code only if private
     };
 
     const docRef = await addDoc(collection(db, 'lectures'), newLecture);
     setNewTitle(''); // Reset the title input after creation
-    setShowModal(false); // Close the modal
+     // Close the modal
     fetchLectures(); // Refresh the list after adding
   };
 
@@ -228,9 +280,18 @@ export default function DashboardPage() {
     
   };
 
+
+  
+
+
+
+
   useEffect(() => {
     if (activeTab === 'lectures') {
       fetchLectures();
+      setVideoURL('');
+      setTranscript('');
+
     } else if (activeTab === 'discover') {
       fetchDiscoverLectures();
     }else if (activeTab === 'codeSearch') {
@@ -479,6 +540,8 @@ export default function DashboardPage() {
         </div>
       )}
 
+
+
             {/* Visibility Checkbox */}
             <div className="flex items-center mb-4">
               <input
@@ -500,7 +563,7 @@ export default function DashboardPage() {
                 Cancel
               </button>
               <button
-                onClick={createLecture} // Add the lecture and close modal
+                onClick={() => setShowModal(false)} // Add the lecture and close modal
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
                 Confirm
