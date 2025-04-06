@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    const result = await whisperRes.json();
+    const result = await whisperRes.json() as { text?: string; error?: { message: string } };
 
     if (!whisperRes.ok) {
       return NextResponse.json(

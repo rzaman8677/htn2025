@@ -1,21 +1,32 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { collection, addDoc, getDocs,deleteDoc, query, where, limit, orderBy, doc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { Plus, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  query,
+  where,
+  limit,
+  orderBy,
+  doc,
+} from "firebase/firestore";
+import { db } from "../lib/firebase";
+import { Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import styles from "../Video.module.css";
+import { Timestamp } from "firebase/firestore";
 
 type Lecture = {
-  id: string;
+  id?: string;
   title: string;
   text?: string;
   videoUrl?: string;
-  createdAt: Date;
-  transcription:string,
-  visibility: 'public' | 'private';
-  privateCode?: string; 
+  createdAt: Date | Timestamp; // Accept Firestore timestamp or JavaScript Date
+  transcription: string;
+  visibility: "public" | "private";
+  privateCode?: string;
 };
 
 export default function DashboardPage() {
@@ -24,31 +35,27 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null); // Track lecture being deleted
   const [confirmDelete, setConfirmDelete] = useState(false); // Confirm deletion modal state
   const [showModal, setShowModal] = useState(false); // Control modal visibility
-  const [newTitle, setNewTitle] = useState(''); // Store new lecture title
-  const [searchTerm, setSearchTerm] = useState(''); // Search term for Discover tab
-  const [activeTab, setActiveTab] = useState('lectures'); // Manage active tab (lectures or discover)
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public'); // Track visibility state
-  const [privateCode, setPrivateCode] = useState<string>(''); // Store private code for private lectures
-  const [codeSearchTerm, setCodeSearchTerm] = useState(''); // Store private code search term
+  const [newTitle, setNewTitle] = useState(""); // Store new lecture title
+  const [searchTerm, setSearchTerm] = useState(""); // Search term for Discover tab
+  const [activeTab, setActiveTab] = useState("lectures"); // Manage active tab (lectures or discover)
+  const [visibility, setVisibility] = useState<"public" | "private">("public"); // Track visibility state
+  const [privateCode, setPrivateCode] = useState<string>(""); // Store private code for private lectures
+  const [codeSearchTerm, setCodeSearchTerm] = useState(""); // Store private code search term
 
-
-  const [videoURL, setVideoURL] = useState('');
+  const [videoURL, setVideoURL] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
 
   const [transcript, setTranscript] = useState("");
 
-
-
-    
-  useEffect( () => {
+  useEffect(() => {
     if (videoURL) {
       // This will be called whenever videoURL is updated
-     
+
       handleTranscribe(); // This will show the updated videoURL
     }
-  }, [videoURL]); 
+  }, [videoURL]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -94,29 +101,20 @@ export default function DashboardPage() {
       // unless your bucket policy allows s3:GetObject for everyone.
       const finalURL = `https://video-raiyanzaman.s3.amazonaws.com/${key}`;
 
-      
       setVideoURL(finalURL);
-      
-
-   
-
-      
     } catch (err: any) {
       console.error("Upload error details:", err);
       setError(err.message || "Upload failed. Check console for details.");
     } finally {
       setIsUploading(false);
-     
-     
     }
   };
-  
 
   const handleTranscribe = async () => {
     setLoading(true);
     setError("");
     setTranscript("");
- 
+
     console.log(videoURL);
     try {
       const res = await fetch("/api/speechrand", {
@@ -137,23 +135,24 @@ export default function DashboardPage() {
     }
   };
 
-
-
-
   const generateRandomCode = async (): Promise<string> => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let code = '';
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let code = "";
     let isUnique = false;
 
     while (!isUnique) {
-      
-      code = '';
+      code = "";
       for (let i = 0; i < 6; i++) {
-        code += characters.charAt(Math.floor(Math.random() * characters.length));
+        code += characters.charAt(
+          Math.floor(Math.random() * characters.length)
+        );
       }
 
-     
-      const lectureQuery = query(collection(db, 'lectures'), where('privateCode', '==', code));
+      const lectureQuery = query(
+        collection(db, "lectures"),
+        where("privateCode", "==", code)
+      );
       const querySnapshot = await getDocs(lectureQuery);
 
       if (querySnapshot.empty) {
@@ -167,9 +166,14 @@ export default function DashboardPage() {
   // Fetch random public lectures for Discover tab
   const fetchDiscoverLectures = async () => {
     const snapshot = await getDocs(
-      query(collection(db, 'lectures'), where('visibility', '==', 'public'), orderBy('createdAt', 'desc'), limit(20))
+      query(
+        collection(db, "lectures"),
+        where("visibility", "==", "public"),
+        orderBy("createdAt", "desc"),
+        limit(20)
+      )
     );
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Lecture[];
@@ -179,9 +183,13 @@ export default function DashboardPage() {
 
   const fetchLectureByCode = async () => {
     const snapshot = await getDocs(
-      query(collection(db, 'lectures'), where('privateCode', '==', codeSearchTerm), where('visibility', '==', 'private'))
+      query(
+        collection(db, "lectures"),
+        where("privateCode", "==", codeSearchTerm),
+        where("visibility", "==", "private")
+      )
     );
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Lecture[];
@@ -191,8 +199,8 @@ export default function DashboardPage() {
 
   // Fetch all lectures for Your Lectures tab
   const fetchLectures = async () => {
-    const snapshot = await getDocs(collection(db, 'lectures'));
-    const data = snapshot.docs.map(doc => ({
+    const snapshot = await getDocs(collection(db, "lectures"));
+    const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Lecture[];
@@ -201,38 +209,36 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    
     if (transcript && videoURL) {
-        createLecture();
-      }
-  }, [transcript,videoURL]); 
-
+      createLecture();
+    }
+  }, [transcript, videoURL]);
 
   const createLecture = async () => {
     if (!newTitle) return; // Don't create if title is missing
- 
+
     const newLecture: Lecture = {
       title: newTitle,
-      text: '',
+      text: "",
       videoUrl: videoURL,
       createdAt: new Date(),
       transcription: transcript,
       visibility,
-      privateCode: await generateRandomCode() , // Generate code only if private
+      privateCode: await generateRandomCode(), // Generate code only if private
     };
 
-    const docRef = await addDoc(collection(db, 'lectures'), newLecture);
-    setNewTitle(''); // Reset the title input after creation
-     // Close the modal
+    const docRef = await addDoc(collection(db, "lectures"), newLecture);
+    setNewTitle(""); // Reset the title input after creation
+    // Close the modal
     fetchLectures(); // Refresh the list after adding
   };
 
   // Handle deleting a lecture
   const handleDelete = async (id: string) => {
     if (confirmDelete) {
-      const lectureRef = doc(db, 'lectures', id);
-      await deleteDoc(lectureRef); 
-      await fetchLectures(); 
+      const lectureRef = doc(db, "lectures", id);
+      await deleteDoc(lectureRef);
+      await fetchLectures();
       setConfirmDelete(false); // Reset confirmation state
       setDeletingId(null); // Reset the ID of the lecture being deleted
     } else {
@@ -243,14 +249,14 @@ export default function DashboardPage() {
 
   // Search for lectures
   const searchLectures = async () => {
-    if (searchTerm.trim() === '') {
+    if (searchTerm.trim() === "") {
       // If search term is empty, fetch discover lectures
       fetchDiscoverLectures();
     } else {
       const q = query(
-        collection(db, 'lectures'),
-        where('title', '>=', searchTerm),
-        where('title', '<=', searchTerm + '\uf8ff')
+        collection(db, "lectures"),
+        where("title", ">=", searchTerm),
+        where("title", "<=", searchTerm + "\uf8ff")
       );
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map((doc) => ({
@@ -259,8 +265,8 @@ export default function DashboardPage() {
       })) as Lecture[];
 
       // Filter out private lectures for the Discover tab
-      if (activeTab === 'discover') {
-        setLectures(data.filter((lecture) => lecture.visibility === 'public'));
+      if (activeTab === "discover") {
+        setLectures(data.filter((lecture) => lecture.visibility === "public"));
       } else {
         setLectures(data);
       }
@@ -270,33 +276,25 @@ export default function DashboardPage() {
   // Switch active tab
   const switchTab = (tab: string) => {
     setActiveTab(tab);
-    if (tab === 'lectures') {
+    if (tab === "lectures") {
       fetchLectures();
-    } else if (tab === 'discover') {
+    } else if (tab === "discover") {
       fetchDiscoverLectures(); // Fetch public lectures for Discover
-    }else if (tab === 'codeSearch') {
-        setLectures([]); // Clear lectures and prepare for code search
-      }
-    
+    } else if (tab === "codeSearch") {
+      setLectures([]); // Clear lectures and prepare for code search
+    }
   };
 
-
-  
-
-
-
-
   useEffect(() => {
-    if (activeTab === 'lectures') {
+    if (activeTab === "lectures") {
       fetchLectures();
-      setVideoURL('');
-      setTranscript('');
-
-    } else if (activeTab === 'discover') {
+      setVideoURL("");
+      setTranscript("");
+    } else if (activeTab === "discover") {
       fetchDiscoverLectures();
-    }else if (activeTab === 'codeSearch') {
-        fetchLectureByCode();
-      }
+    } else if (activeTab === "codeSearch") {
+      fetchLectureByCode();
+    }
   }, [activeTab]);
 
   return (
@@ -306,84 +304,96 @@ export default function DashboardPage() {
       {/* Tab Navigation */}
       <div className="mb-6 flex space-x-4">
         <button
-          onClick={() => switchTab('lectures')}
-          className={`text-lg ${activeTab === 'lectures' ? 'font-bold' : ''}`}
+          onClick={() => switchTab("lectures")}
+          className={`text-lg ${activeTab === "lectures" ? "font-bold" : ""}`}
         >
           Your Lectures
         </button>
         <button
-          onClick={() => switchTab('discover')}
-          className={`text-lg ${activeTab === 'discover' ? 'font-bold' : ''}`}
+          onClick={() => switchTab("discover")}
+          className={`text-lg ${activeTab === "discover" ? "font-bold" : ""}`}
         >
           Discover
         </button>
         <button
-          onClick={() => switchTab('codeSearch')}
-          className={`text-lg ${activeTab === 'codeSearch' ? 'font-bold' : ''}`}
+          onClick={() => switchTab("codeSearch")}
+          className={`text-lg ${activeTab === "codeSearch" ? "font-bold" : ""}`}
         >
           Search by Code
         </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'lectures' && (
+      {activeTab === "lectures" && (
         <div>
           {loading ? (
             <p>Loading...</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {lectures.map(lecture => (
-                <Link key={lecture.id} href={{
-                    pathname: `/lectures/${lecture.id}`
-                  }}>
-                <div
+              {lectures.map((lecture) => (
+                <Link
                   key={lecture.id}
-                  className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
+                  href={{
+                    pathname: `/lectures/${lecture.id}`,
+                  }}
                 >
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold mb-2">
-                      {lecture.title || 'Untitled Lecture'}
-                    </h2>
-                    <button
+                  <div
+                    key={lecture.id}
+                    className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-semibold mb-2">
+                        {lecture.title || "Untitled Lecture"}
+                      </h2>
+                      <button
                         onClick={(e) => {
-                            e.preventDefault(); 
-                            handleDelete(lecture.id); 
-                          }}
-                      className="text-red-500 hover:text-red-600"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
+                          e.preventDefault();
+                          handleDelete(lecture.id!);
+                        }}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
 
-                  <div className="aspect-video bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
-                    {lecture.videoUrl ? (
-                      <video src={lecture.videoUrl} controls className="w-full h-full" />
-                    ) : (
-                      <span>No video</span>
+                    <div className="aspect-video bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
+                      {lecture.videoUrl ? (
+                        <video
+                          src={lecture.videoUrl}
+                          controls
+                          className="w-full h-full"
+                        />
+                      ) : (
+                        <span>No video</span>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-500 mt-2">
+                      Created on:{" "}
+                      {lecture.createdAt instanceof Date
+                        ? lecture.createdAt.toLocaleDateString()
+                        : lecture.createdAt.toDate().toLocaleDateString()}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Visibility: {lecture.visibility}
+                    </p>
+
+                    {/* Show the private code for both public and private lectures */}
+                    {lecture.visibility === "private" && (
+                      <p className="text-sm text-gray-500">
+                        Private Code: {lecture.privateCode}
+                      </p>
+                    )}
+                    {lecture.visibility === "public" && lecture.privateCode && (
+                      <p className="text-sm text-gray-500">
+                        Code: {lecture.privateCode}
+                      </p>
                     )}
                   </div>
-
-                  <p className="text-sm text-gray-500 mt-2">
-                    Created on: {lecture.createdAt.toDate().toLocaleDateString()}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Visibility: {lecture.visibility}
-                  </p>
-
-                  {/* Show the private code for both public and private lectures */}
-                  {lecture.visibility === 'private' && (
-                    <p className="text-sm text-gray-500">Private Code: {lecture.privateCode}</p>
-                  )}
-                  {lecture.visibility === 'public' && lecture.privateCode && (
-                    <p className="text-sm text-gray-500">Code: {lecture.privateCode}</p>
-                  )}
-                </div>
                 </Link>
               ))}
             </div>
           )}
-
-          
 
           {/* Plus button */}
           <button
@@ -395,15 +405,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      
-
-{activeTab === 'discover' && (
+      {activeTab === "discover" && (
         <div>
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchLectures()} // Trigger search on Enter
+            onKeyPress={(e) => e.key === "Enter" && searchLectures()} // Trigger search on Enter
             placeholder="Search for lectures"
             className="w-full p-3 mb-4 border border-gray-300 rounded-md"
           />
@@ -412,32 +420,44 @@ export default function DashboardPage() {
             <p>Loading...</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {lectures.map(lecture => (
-                <Link key={lecture.id} href={{
-                    pathname: `/lectures/${lecture.id}`
-                  }}>
-                <div
+              {lectures.map((lecture) => (
+                <Link
                   key={lecture.id}
-                  className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
+                  href={{
+                    pathname: `/lectures/${lecture.id}`,
+                  }}
                 >
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold mb-2">
-                      {lecture.title || 'Untitled Lecture'}
-                    </h2>
-                  </div>
+                  <div
+                    key={lecture.id}
+                    className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-semibold mb-2">
+                        {lecture.title || "Untitled Lecture"}
+                      </h2>
+                    </div>
 
-                  <div className="aspect-video bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
-                    {lecture.videoUrl ? (
-                      <video src={lecture.videoUrl} controls className="w-full h-full" />
-                    ) : (
-                      <span>No video</span>
-                    )}
-                  </div>
+                    <div className="aspect-video bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
+                      {lecture.videoUrl ? (
+                        <video
+                          src={lecture.videoUrl}
+                          controls
+                          className="w-full h-full"
+                        />
+                      ) : (
+                        <span>No video</span>
+                      )}
+                    </div>
 
-                  <p className="text-sm text-gray-500 mt-2">
-                    Created on: {lecture.createdAt.toDate().toLocaleDateString()}
-                  </p>
-                </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Created on:{" "}
+                      {lecture.createdAt instanceof Date
+                        ? lecture.createdAt.toLocaleDateString()
+                        : lecture.createdAt && "toDate" in lecture.createdAt
+                        ? lecture.createdAt.toDate().toLocaleDateString()
+                        : "Unknown date"}
+                    </p>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -445,7 +465,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-{activeTab === 'codeSearch' && (
+      {activeTab === "codeSearch" && (
         <div>
           <input
             type="text"
@@ -464,42 +484,50 @@ export default function DashboardPage() {
             <p>Loading...</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {lectures.map(lecture => (
-                <Link key={lecture.id} href={{
-                    pathname: `/lectures/${lecture.id}`
-                  }}>
-                <div
+              {lectures.map((lecture) => (
+                <Link
                   key={lecture.id}
-                  className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
+                  href={{
+                    pathname: `/lectures/${lecture.id}`,
+                  }}
                 >
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-lg font-semibold mb-2">
-                      {lecture.title || 'Untitled Lecture'}
-                    </h2>
-                  </div>
+                  <div
+                    key={lecture.id}
+                    className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
+                  >
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-semibold mb-2">
+                        {lecture.title || "Untitled Lecture"}
+                      </h2>
+                    </div>
 
-                  <div className="aspect-video bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
-                    {lecture.videoUrl ? (
-                      <video src={lecture.videoUrl} controls className="w-full h-full" />
-                    ) : (
-                      <span>No video</span>
-                    )}
-                  </div>
+                    <div className="aspect-video bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
+                      {lecture.videoUrl ? (
+                        <video
+                          src={lecture.videoUrl}
+                          controls
+                          className="w-full h-full"
+                        />
+                      ) : (
+                        <span>No video</span>
+                      )}
+                    </div>
 
-                  <p className="text-sm text-gray-500 mt-2">
-                    Created on: {lecture.createdAt.toDate().toLocaleDateString()}
-                  </p>
-                </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Created on:{" "}
+                      {lecture.createdAt instanceof Date
+                        ? lecture.createdAt.toLocaleDateString()
+                        : lecture.createdAt && "toDate" in lecture.createdAt
+                        ? lecture.createdAt.toDate().toLocaleDateString()
+                        : "Unknown date"}
+                    </p>
+                  </div>
                 </Link>
               ))}
             </div>
-            
           )}
-
-
         </div>
       )}
-      
 
       {/* Modal for adding new lecture */}
       {showModal && (
@@ -516,42 +544,44 @@ export default function DashboardPage() {
               className="w-full p-3 mb-4 border border-gray-300 rounded-md"
             />
 
-<input
-        type="file"
-        accept="video/*"
-        onChange={handleFileChange}
-        className={styles.input}
-        disabled={isUploading}
-      />
+            <input
+              type="file"
+              accept="video/*"
+              onChange={handleFileChange}
+              className={styles.input}
+              disabled={isUploading}
+            />
 
-      {isUploading && <p className={styles.uploading}>Uploading...</p>}
-      {error && <p className={styles.error}>{error}</p>}
+            {isUploading && <p className={styles.uploading}>Uploading...</p>}
+            {error && <p className={styles.error}>{error}</p>}
 
-      {videoURL && (
-        <div className={styles.videoContainer}>
-          <h2 className={styles.subheading}>Preview: {fileName}</h2>
-          <video controls src={videoURL} className={styles.video} />
-          <p className={styles.link}>
-            Potential URL:{" "}
-            <a href={videoURL} target="_blank" rel="noreferrer">
-              {videoURL}
-            </a>
-          </p>
-        </div>
-      )}
-
-
+            {videoURL && (
+              <div className={styles.videoContainer}>
+                <h2 className={styles.subheading}>Preview: {fileName}</h2>
+                <video controls src={videoURL} className={styles.video} />
+                <p className={styles.link}>
+                  Potential URL:{" "}
+                  <a href={videoURL} target="_blank" rel="noreferrer">
+                    {videoURL}
+                  </a>
+                </p>
+              </div>
+            )}
 
             {/* Visibility Checkbox */}
             <div className="flex items-center mb-4">
               <input
                 type="checkbox"
-                checked={visibility === 'private'}
-                onChange={() => setVisibility(visibility === 'public' ? 'private' : 'public')}
+                checked={visibility === "private"}
+                onChange={() =>
+                  setVisibility(visibility === "public" ? "private" : "public")
+                }
                 id="visibility-toggle"
                 className="mr-2"
               />
-              <label htmlFor="visibility-toggle" className="text-sm">Private Lecture</label>
+              <label htmlFor="visibility-toggle" className="text-sm">
+                Private Lecture
+              </label>
             </div>
 
             {/* Confirm Button */}
@@ -577,7 +607,9 @@ export default function DashboardPage() {
       {deletingId && confirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full">
-            <h2 className="text-lg font-semibold mb-4">Are you sure you want to delete this lecture?</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              Are you sure you want to delete this lecture?
+            </h2>
             <div className="flex justify-around">
               <button
                 onClick={() => setConfirmDelete(false)}

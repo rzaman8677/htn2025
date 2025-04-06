@@ -14,7 +14,7 @@ const openai = new OpenAI({
       console.log("Received question:", question);
   
       // 2) Prepare messages
-      const messages = [
+      const messages: OpenAI.ChatCompletionMessageParam[]  = [
         {
           role: "system",
           content: "You are an AI assistant. Use the following transcript...",
